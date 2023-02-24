@@ -3,6 +3,9 @@
 - git clone https://github.com/limdongjin/whisper.cpp.py
 - cd whisper.cpp.py
 - pip install .
+- cd whisper.cpp
+- make tiny
+- cd ..
 
 ```python3
 from whisper_cpp_py import WhisperContextWrapper, WhisperFullParamsWrapper, transcribe, extract_output
