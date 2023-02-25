@@ -1,0 +1,6 @@
+cache-dir = ".cache"
+
+[virtualenvs]
+in-project = true
+path = ".venv"
+prompt = "prompt"

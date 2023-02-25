@@ -1,14 +1,17 @@
-import librosa
+import scipy
 import pathlib
 from whisper_cpp_py import WhisperContextWrapper, WhisperFullParamsWrapper, transcribe, extract_output
 
 if __name__ == "__main__":
     filename = pathlib.Path(__file__).parent.resolve() / "jfk.wav"
 
-    context_wrapper = WhisperContextWrapper('tiny')
+    context_wrapper = WhisperContextWrapper(model_name = 'tiny')
     params_wrapper = WhisperFullParamsWrapper()
+     
+    sr, audio = scipy.io.wavfile.read(filename)
+    assert sr == 16000
     
-    audio, sr = librosa.load(filename, sr=16000)
+    audio = audio.astype('float32') / 32768.0
 
     res = transcribe(
             waveform = audio,

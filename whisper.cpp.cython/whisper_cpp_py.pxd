@@ -8,7 +8,7 @@ cdef nogil:
     int WHISPER_N_MEL = 80
     int WHISPER_HOP_LENGTH = 160
     int WHISPER_CHUNK_SIZE = 30
-    char* LANGUAGE = b'ko'
+    char* LANGUAGE = b'en'
     ctypedef struct audio_data:
         float* frames;
         int n_frames;

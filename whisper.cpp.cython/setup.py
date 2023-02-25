@@ -46,6 +46,7 @@ setup(
     ext_modules = cythonize("whisper_cpp_py.pyx"),
     include_dirs = ['./whisper.cpp/', numpy.get_include()],
     install_requires=[
-        'numpy'
+        'numpy',
+        'scipy'
     ],
 )

@@ -1,23 +1,6 @@
-# whisper.cpp.py
+# whisper.cpp.cdll
 
-## Option1. Use Cythonized whisper.cpp
-
-```
-TMP=$(pwd)
-
-cd $TMP/whisper.cpp.cython/whisper.cpp
-make tiny
-
-cd $TMP/whisper.cpp.cython
-
-pip install .
-# OR
-# python -m venv .venv && .venv/bin/python3.9 -m pip install .
-
-python examples/example.py
-```
-
-## Option2. Use `whisper_cpp_cdll`
+## Quick Start
 
 **1. Install whisper.cpp**
 ```bash

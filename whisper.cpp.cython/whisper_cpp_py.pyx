@@ -50,11 +50,14 @@ cdef class WhisperContextWrapper:
 
     def __init__(
         self,
-        model_name, 
+        model_name = None, 
         DEFAULT_MODEL_FILE_PREFIX='ggml-', 
-        DEFAULT_MODEL_DIR = '~/whisper.cpp/models',
+        DEFAULT_MODEL_DIR = './whisper.cpp/models',
         absolute_file_path = None,
     ):
+        assert model_name is not None or absolute_file_path is not None
+        assert model_name is None or absolute_file_path is None
+
         self.flag = False
         self.set_context_from_file(
             model_name = model_name, 
@@ -66,11 +69,14 @@ cdef class WhisperContextWrapper:
 
     def set_context_from_file(
         self,
-        model_name,
+        model_name = None,
         DEFAULT_MODEL_FILE_PREFIX='ggml-', 
-        DEFAULT_MODEL_DIR = '~/whisper.cpp/models',
+        DEFAULT_MODEL_DIR = './whisper.cpp/models',
         absolute_file_path = None,
     ):
+        assert model_name is not None or absolute_file_path is not None
+        assert model_name is None or absolute_file_path is None
+
         if self.flag:
             self.destroy_current_context()
 
@@ -81,7 +87,7 @@ cdef class WhisperContextWrapper:
             print("your model path:")
             print(model_path)
             print()
-            print("but NOT FOUND,\nRun following steps:\ncd ~/whisper.cpp\nmake tiny\npython\n\n")
+            print("but NOT FOUND,\nRun following steps:\ncd ./whisper.cpp\nmake tiny\npython\n\n")
             print(">>> model = WhisperContextWrapper('tiny')")
             raise Exception("NOT FOUND model.")
 
