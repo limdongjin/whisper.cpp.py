@@ -1,3 +1,4 @@
+import scipy
 
 def read_audio(filename, sr = 16000):
     if sr != 16000:

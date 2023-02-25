@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "whisper_cpp_cdll"
-version = "0.0.3.1"
+version = "0.0.3.3"
 description = "toolkit for whisper.cpp"
 authors = ["limdongjin <geniuslim27@gmail.com>"]
 readme = "README.md"
@@ -8,11 +8,11 @@ keywords = ["whisper", "whisper.cpp", "speech-recognition", "ASR"]
 license = "MIT"
 homepage = "https://github.com/limdongjin/whisper.cpp.py"
 repository = "https://github.com/limdongjin/whisper.cpp.py"
-include = ["LICENSE"]
+include = ["LICENSE", "README.md"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
-scipy = "1.9.3"
+scipy = "^1.7.0"
 
 [build-system]
 requires = ["poetry-core"]
