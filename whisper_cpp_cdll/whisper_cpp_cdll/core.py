@@ -1,6 +1,8 @@
 from scipy.io import wavfile
 import ctypes
 from .types import WhisperFullParams, WhisperTokenData
+import numpy as np
+import math
 
 def init_whisper_and_ctx(libname, fname_model):
     """Return (whisper, WhisperContext)
@@ -29,7 +31,10 @@ def _execute_whisper_full(
     n_threads = 4,
     print_realtime = False,
     print_progress = False,
-    suppress_non_speech_tokens = True
+    suppress_non_speech_tokens = True,
+    max_tokens = 10,
+    beam_search_beam_size = 10,
+    greedy_best_of = -1
 ):
     assert data is not None
     assert whisper is not None and ctx is not None  
@@ -42,6 +47,9 @@ def _execute_whisper_full(
     params.print_progress = print_progress
     params.suppress_non_speech_tokens = suppress_non_speech_tokens
     params.language = language
+    params.max_tokens = max_tokens
+    params.beam_search.beam_size = beam_search_beam_size
+    params.greedy.best_of = greedy_best_of
 
     result = whisper.whisper_full(ctypes.c_void_p(ctx), params, data.ctypes.data_as(ctypes.POINTER(ctypes.c_float)), len(data))
     n_seg = whisper.whisper_full_n_segments(ctypes.c_void_p(ctx))
@@ -89,7 +97,10 @@ def run_whisper(
     n_threads = 4,
     print_realtime = False,
     print_progress = False,
-    suppress_non_speech_tokens = True
+    suppress_non_speech_tokens = True,
+    max_tokens = 10,
+    beam_search_beam_size = 10,
+    greedy_best_of = -1
 ):
     """Run whisper and Return list of segment dict. 
 
@@ -104,20 +115,26 @@ def run_whisper(
 
     total_length = data.shape[0]
     spokens = []
-    for start in range(0, total_length, WINDOW_SIZE):
+    chunks = np.array_split(data, math.ceil(total_length/WINDOW_SIZE))
+    start = 0
+    for chunk in chunks: 
         res = _execute_whisper_full(
-                data = data[start:start+WINDOW_SIZE].copy(), 
+                data = chunk, 
                 whisper = whisper, 
                 ctx = ctx,
                 language = language,
                 n_threads = n_threads,
                 print_realtime = print_realtime,
                 print_progress = print_progress,
-                suppress_non_speech_tokens = suppress_non_speech_tokens
+                suppress_non_speech_tokens = suppress_non_speech_tokens,
+                max_tokens = max_tokens,
+                beam_search_beam_size = beam_search_beam_size,
+                greedy_best_of = greedy_best_of
             )
         for segment in res:
             segment['start'] += start
             segment['end'] += start
+        start += chunk.size
         spokens.extend(res)
 
     whisper.whisper_free(ctypes.c_void_p(ctx))

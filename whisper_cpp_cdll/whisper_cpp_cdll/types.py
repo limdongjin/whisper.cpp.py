@@ -1,5 +1,16 @@
 import ctypes
 
+class GreedyParam(ctypes.Structure):
+    _fields_ = [
+        ("best_of", ctypes.c_int)
+    ]
+
+class BeamSearchParam(ctypes.Structure):
+    _fields_ = [
+        ("beam_size", ctypes.c_int),
+        ("patience", ctypes.c_float)
+    ]
+
 class WhisperFullParams(ctypes.Structure):
     _fields_ = [
         ("strategy", ctypes.c_int), 
@@ -44,9 +55,11 @@ class WhisperFullParams(ctypes.Structure):
         ("logprob_thold", ctypes.c_float),
         ("no_speech_thold", ctypes.c_float),
 #
-        ("greedy", ctypes.c_int * 1),
+#        ("greedy", ctypes.c_int * 1),
+        ("greedy", GreedyParam),
 #
-        ("beam_search", ctypes.c_int * 2),
+#        ("beam_search", ctypes.c_int * 2),
+        ("beam_search", BeamSearchParam),
 #
         ("new_segment_callback", ctypes.c_void_p),
         ("new_segment_callback_user_data", ctypes.c_void_p),
