@@ -17,7 +17,7 @@ g++ -O3 -std=c++11 -pthread --shared -fPIC -static-libstdc++ whisper.cpp ggml.o 
 pip install whisper_cpp_cdll
 ```
 
-**3. Usage
+**3. Usage**
 ```python3
 from whisper_cpp_cdll.core import run_whisper
 from whisper_cpp_cdll.util import read_audio
