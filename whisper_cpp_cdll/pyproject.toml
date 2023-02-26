@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "whisper_cpp_cdll"
-version = "0.0.4"
+version = "0.0.5"
 description = "toolkit for whisper.cpp"
 authors = ["limdongjin <geniuslim27@gmail.com>"]
 readme = "README.md"
