@@ -1,6 +1,6 @@
 from scipy.io import wavfile
 import ctypes
-from .types import WhisperFullParams, WhisperTokenData
+from .types import WhisperContext, WhisperFullParams, WhisperTokenData
 import numpy as np
 import math
 
@@ -12,31 +12,35 @@ def init_whisper_and_ctx(libname, fname_model):
            fname_model: model file path (eg, '/app/whisper.cpp/models/ggml-tiny.bin')
     """
     whisper = ctypes.CDLL(libname)
-    whisper.whisper_init_from_file.restype = ctypes.c_void_p
+
+    whisper.whisper_init_from_file.restype = ctypes.POINTER(WhisperContext)
+    # whisper.whisper_init_from_file.restype = ctypes.c_void_p
     whisper.whisper_full_default_params.restype   = WhisperFullParams
     whisper.whisper_full_get_segment_text.restype = ctypes.c_char_p
     whisper.whisper_full_get_segment_t0.restype = ctypes.c_int
     whisper.whisper_full_get_segment_t1.restype = ctypes.c_int
     whisper.whisper_full_get_token_data.restype = WhisperTokenData
     whisper.whisper_full_get_token_text.restype = ctypes.c_char_p
-    ctx = whisper.whisper_init_from_file(fname_model.encode("utf-8"))
+    whisper.whisper_full.argtypes = [ctypes.POINTER(WhisperContext), WhisperFullParams, ctypes.POINTER(ctypes.c_float), ctypes.c_int]
+    whisper.whisper_full.restype = ctypes.c_int
+    ctx_p = whisper.whisper_init_from_file(fname_model.encode("utf-8"))
 
-    return whisper, ctx
+    return whisper, ctx_p
 
 def _execute_whisper_full(
     data = None, 
     whisper = None,
-    ctx = None,
+    ctx_p = None,
     verbose = False,
     language = b'en',
     n_threads = 4,
     print_realtime = False,
     print_progress = False,
-    print_timestamps = True,
+    print_timestamps = False,
     token_timestamps = False,
     suppress_non_speech_tokens = True,
     temperature = 0.0,
-    max_len = 0,
+    max_len = 30,
     max_tokens = 10,
     beam_search_beam_size = 10,
     greedy_best_of = -1,
@@ -47,7 +51,7 @@ def _execute_whisper_full(
     no_speech_thold = 0.6
 ):
     assert data is not None
-    assert whisper is not None and ctx is not None  
+    assert whisper is not None and ctx_p is not None  
     assert type(data) is not str
     assert type(language) is bytes
 
@@ -71,29 +75,30 @@ def _execute_whisper_full(
     params.no_speech_thold = no_speech_thold
     params.length_penalty = length_penalty
     
-    result = whisper.whisper_full(ctypes.c_void_p(ctx), params, data.ctypes.data_as(ctypes.POINTER(ctypes.c_float)), len(data))
+    result = whisper.whisper_full(ctx_p, params, data.ctypes.data_as(ctypes.POINTER(ctypes.c_float)), len(data))
+    if result != 0:
+        raise Exception("whisper_full exception!!!")
     if verbose:
-        whisper.whisper_print_timings(ctypes.c_void_p(ctx))
-
-    n_seg = whisper.whisper_full_n_segments(ctypes.c_void_p(ctx))
+        whisper.whisper_print_timings(ctx_p)
+    n_seg = whisper.whisper_full_n_segments(ctx_p)
     
     ret = []
     for seg_i in range(n_seg):
         el = {}
         el['segment_id'] = seg_i
-        el['text'] = whisper.whisper_full_get_segment_text(ctypes.c_void_p(ctx), seg_i).decode('utf-8', errors='replace')
-        el['start'] = int((whisper.whisper_full_get_segment_t0(ctypes.c_void_p(ctx), seg_i) / 100) * 16000.0)
-        el['end'] = int((whisper.whisper_full_get_segment_t1(ctypes.c_void_p(ctx), seg_i) / 100) * 16000.0)
+        el['text'] = whisper.whisper_full_get_segment_text(ctx_p, seg_i).decode('utf-8', errors='replace')
+        el['start'] = int((whisper.whisper_full_get_segment_t0(ctx_p, seg_i) / 100) * 16000.0)
+        el['end'] = int((whisper.whisper_full_get_segment_t1(ctx_p, seg_i) / 100) * 16000.0)
         if el['end'] - el['start'] <= 10:
             continue
 
         el['tokens'] = []
-        n_token = whisper.whisper_full_n_tokens(ctypes.c_void_p(ctx), seg_i)
+        n_token = whisper.whisper_full_n_tokens(ctx_p, seg_i)
         for token_t in range(n_token):
             token = {}
-            token['text'] = whisper.whisper_full_get_token_text(ctypes.c_void_p(ctx), seg_i, token_t).decode('utf-8', errors='replace')
+            token['text'] = whisper.whisper_full_get_token_text(ctx_p, seg_i, token_t).decode('utf-8', errors='replace')
             
-            d = whisper.whisper_full_get_token_data(ctypes.c_void_p(ctx), seg_i, token_t)
+            d = whisper.whisper_full_get_token_data(ctx_p, seg_i, token_t)
             token['id'] = d.id
             token['tid'] = d.tid
             token['p'] = d.p
@@ -115,17 +120,17 @@ def run_whisper(
     data,
     libname, 
     fname_model,
-    WINDOW_SIZE = 16000 * 30 * 2,
+    WINDOW_SIZE = 16000 * 30,
     verbose = False,
     language = b'en',
     n_threads = 4,
     print_realtime = False,
     print_progress = False,
-    print_timestamps = True,
+    print_timestamps = False,
     token_timestamps = False,
     suppress_non_speech_tokens = True,
     temperature = 0.0,
-    max_len = 0,
+    max_len = 30,
     max_tokens = 10,
     beam_search_beam_size = 10,
     greedy_best_of = -1,
@@ -144,17 +149,19 @@ def run_whisper(
            WINDOW_SIZE: execution unit size for handle large input. (default: 16000 * 60)
 
     """
-    whisper, ctx = init_whisper_and_ctx(libname = libname, fname_model = fname_model)
+
+    # whisper, ctx = init_whisper_and_ctx(libname = libname, fname_model = fname_model)
 
     total_length = data.shape[0]
     spokens = []
     chunks = np.array_split(data, math.ceil(total_length/WINDOW_SIZE))
     start = 0
     for chunk in chunks: 
+        whisper, ctx_p = init_whisper_and_ctx(libname = libname, fname_model = fname_model)
         res = _execute_whisper_full(
-                data = chunk, 
+                data = chunk,
                 whisper = whisper, 
-                ctx = ctx,
+                ctx_p = ctx_p,
                 verbose = verbose,
                 language = language,
                 n_threads = n_threads,
@@ -179,10 +186,10 @@ def run_whisper(
             segment['end'] += start
         start += chunk.size
         spokens.extend(res)
-
-    whisper.whisper_free(ctypes.c_void_p(ctx))
-    del whisper
-    del ctx
+        
+        whisper.whisper_free(ctx_p)
+        del whisper
+        del ctx_p
 
     return spokens
 

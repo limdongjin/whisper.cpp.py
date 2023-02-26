@@ -1,84 +1,185 @@
-import ctypes
+from ctypes import Structure, c_int, c_float, c_bool, c_void_p, c_int64, c_int32, c_uint, c_char_p
 
-class GreedyParam(ctypes.Structure):
+class WhisperHparams(Structure):
     _fields_ = [
-        ("best_of", ctypes.c_int)
+        ("n_vocab", c_int32),
+        ("n_audio_ctx", c_int32),
+        ("n_audio_state", c_int32),
+        ("n_audio_head", c_int32),
+        ("n_audio_layer", c_int32),
+        ("n_text_ctx", c_int32),
+        ("n_text_state", c_int32),
+        ("n_text_head", c_int32),
+        ("n_text_layer", c_int32),
+        ("n_mels", c_int32),
+        ("f16", c_int32)
     ]
 
-class BeamSearchParam(ctypes.Structure):
+class WhisperFilters(Structure):
     _fields_ = [
-        ("beam_size", ctypes.c_int),
-        ("patience", ctypes.c_float)
+        ("n_mel", c_int32),
+        ("n_fft", c_int32),
+        ("data", c_void_p)
     ]
 
-class WhisperFullParams(ctypes.Structure):
+class WhisperMel(Structure):
     _fields_ = [
-        ("strategy", ctypes.c_int), 
+        ("n_len", c_int),
+        ("n_mel", c_int),
+        ("data", c_void_p)
+    ]
+
+class WhisperModel(Structure):
+    _fields_ = [
+        ("type", c_uint),
 #
-        ("n_threads", ctypes.c_int),
-        ("n_max_text_ctx", ctypes.c_int),
-        ("offset_ms", ctypes.c_int),
-        ("duration_ms", ctypes.c_int),
+        ("hparams", WhisperHparams),
+        ("filters", WhisperFilters),
+#       
+        ("e_pe", c_void_p),
 #
-        ("translate", ctypes.c_bool),
-        ("no_context", ctypes.c_bool),
-        ("single_segment", ctypes.c_bool),
-        ("print_special", ctypes.c_bool),
-        ("print_progress", ctypes.c_bool),
-        ("print_realtime", ctypes.c_bool),
-        ("print_timestamps", ctypes.c_bool),
+        ("e_conv_1_w", c_void_p),
+        ("e_conv_1_b", c_void_p),
 #
-        ("token_timestamps", ctypes.c_bool),
-        ("thold_pt", ctypes.c_float),
-        ("thold_ptsum", ctypes.c_float),
-        ("max_len", ctypes.c_int),
-        ("split_on_word", ctypes.c_bool),
-        ("max_tokens", ctypes.c_int),
+        ("e_conv_2_w", c_void_p),
+        ("e_conv_2_b", c_void_p),
 #
-        ("speed_up", ctypes.c_bool),
-        ("audio_ctx", ctypes.c_int),
+        ("e_ln_w", c_void_p),
+        ("e_ln_b", c_void_p),
 #
-        ("prompt_tokens", ctypes.c_void_p),
-        ("prompt_n_tokens", ctypes.c_int),
+        ("d_pe", c_void_p),
+        ("d_te", c_void_p),
 #
-        ("language", ctypes.c_char_p),
+        ("d_ln_w", c_void_p),
+        ("d_ln_b", c_void_p),
 #
-        ("suppress_blank", ctypes.c_bool),
-        ("suppress_non_speech_tokens", ctypes.c_bool),
+        ("layers_encoder", c_void_p),
+        ("layers_decoder", c_void_p),
 #
-        ("temperature", ctypes.c_float),
-        ("max_initial_ts", ctypes.c_float),
-        ("length_penalty", ctypes.c_float),
+        ("ctx", c_void_p), # ggml_context*
 #
-        ("temperature_inc", ctypes.c_float),
-        ("entropy_thold", ctypes.c_float),
-        ("logprob_thold", ctypes.c_float),
-        ("no_speech_thold", ctypes.c_float),
+        ("buf", c_void_p),
 #
-#        ("greedy", ctypes.c_int * 1),
+        ("n_loaded", c_int),
+        ("tensors", c_void_p)
+    ]
+
+
+class WhisperContext(Structure):
+    _fields_ = [
+        ("t_load_us", c_int64),
+        ("t_mel_us", c_int64),
+        ("t_sample_us", c_int64),
+        ("t_encode_us", c_int64),
+        ("t_decode_us", c_int64),
+        ("t_start_us", c_int64),
+#
+        ("n_sample", c_int32),
+        ("n_encode", c_int32),
+        ("n_decode", c_int32),
+        ("n_fall_p", c_int32),
+        ("n_fall_h", c_int32),
+#
+        ("wtype", c_uint),
+        ("mel", WhisperMel),
+        ("model", WhisperModel),
+        ("vocab", c_void_p),
+        ("kv_cross", c_void_p),
+        ("decoders", c_void_p),
+        ("buf_compute", c_void_p),
+        ("buf_scratch", c_void_p),
+        ("buf_last", c_int),
+        ("buf_max_size", c_int64),
+        ("logits", c_void_p),
+        ("result_all", c_void_p),
+        ("prompt_past", c_void_p),
+        ("logits_id", c_void_p),
+        ("rng", c_void_p),
+        ("lang_id", c_int),
+        ("t_beg", c_int64),
+        ("t_last", c_int64),
+        ("tid_last", c_int),
+        ("energy", c_void_p),
+        ("exp_n_audio_ctx", c_int32)
+    ]
+
+class GreedyParam(Structure):
+    _fields_ = [
+        ("best_of", c_int)
+    ]
+
+class BeamSearchParam(Structure):
+    _fields_ = [
+        ("beam_size", c_int),
+        ("patience", c_float)
+    ]
+
+class WhisperFullParams(Structure):
+    _fields_ = [
+        ("strategy", c_int), 
+#
+        ("n_threads", c_int),
+        ("n_max_text_ctx", c_int),
+        ("offset_ms", c_int),
+        ("duration_ms", c_int),
+#
+        ("translate", c_bool),
+        ("no_context", c_bool),
+        ("single_segment", c_bool),
+        ("print_special", c_bool),
+        ("print_progress", c_bool),
+        ("print_realtime", c_bool),
+        ("print_timestamps", c_bool),
+#
+        ("token_timestamps", c_bool),
+        ("thold_pt", c_float),
+        ("thold_ptsum", c_float),
+        ("max_len", c_int),
+        ("split_on_word", c_bool),
+        ("max_tokens", c_int),
+#
+        ("speed_up", c_bool),
+        ("audio_ctx", c_int),
+#
+        ("prompt_tokens", c_void_p),
+        ("prompt_n_tokens", c_int),
+#
+        ("language", c_char_p),
+#
+        ("suppress_blank", c_bool),
+        ("suppress_non_speech_tokens", c_bool),
+#
+        ("temperature", c_float),
+        ("max_initial_ts", c_float),
+        ("length_penalty", c_float),
+#
+        ("temperature_inc", c_float),
+        ("entropy_thold", c_float),
+        ("logprob_thold", c_float),
+        ("no_speech_thold", c_float),
+#
         ("greedy", GreedyParam),
 #
-#        ("beam_search", ctypes.c_int * 2),
         ("beam_search", BeamSearchParam),
 #
-        ("new_segment_callback", ctypes.c_void_p),
-        ("new_segment_callback_user_data", ctypes.c_void_p),
-        ("encoder_begin_callback", ctypes.c_void_p),
-        ("encoder_begin_callback_user_data", ctypes.c_void_p),
-        ("logits_filter_callback", ctypes.c_void_p),
-        ("logits_filter_callback_user_data", ctypes.c_void_p),
+        ("new_segment_callback", c_void_p),
+        ("new_segment_callback_user_data", c_void_p),
+        ("encoder_begin_callback", c_void_p),
+        ("encoder_begin_callback_user_data", c_void_p),
+        ("logits_filter_callback", c_void_p),
+        ("logits_filter_callback_user_data", c_void_p),
     ]
 
-class WhisperTokenData(ctypes.Structure):
+class WhisperTokenData(Structure):
     _fields_ = [
-        ('id', ctypes.c_int),
-        ('tid', ctypes.c_int),
-        ('p', ctypes.c_float),
-        ('plog', ctypes.c_float),
-        ('pt', ctypes.c_float),
-        ('ptsum', ctypes.c_float),
-        ('t0', ctypes.c_int64),
-        ('t1', ctypes.c_int64),
-        ('vlen', ctypes.c_float)
+        ('id', c_int),
+        ('tid', c_int),
+        ('p', c_float),
+        ('plog', c_float),
+        ('pt', c_float),
+        ('ptsum', c_float),
+        ('t0', c_int64),
+        ('t1', c_int64),
+        ('vlen', c_float)
     ]
 
