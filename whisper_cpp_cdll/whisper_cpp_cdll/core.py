@@ -27,14 +27,24 @@ def _execute_whisper_full(
     data = None, 
     whisper = None,
     ctx = None,
+    verbose = False,
     language = b'en',
     n_threads = 4,
     print_realtime = False,
     print_progress = False,
+    print_timestamps = True,
+    token_timestamps = False,
     suppress_non_speech_tokens = True,
+    temperature = 0.0,
+    max_len = 0,
     max_tokens = 10,
     beam_search_beam_size = 10,
-    greedy_best_of = -1
+    greedy_best_of = -1,
+    speed_up = False,
+    length_penalty = -1.0,
+    entropy_thold = 2.4,
+    logprob_thold = -1.0,
+    no_speech_thold = 0.6
 ):
     assert data is not None
     assert whisper is not None and ctx is not None  
@@ -42,18 +52,31 @@ def _execute_whisper_full(
     assert type(language) is bytes
 
     params = whisper.whisper_full_default_params(0)
+
+    params.language = language
     params.n_threads = n_threads
     params.print_realtime = print_realtime 
     params.print_progress = print_progress
+    params.print_timestamps = print_timestamps
+    params.token_timestamps = token_timestamps
     params.suppress_non_speech_tokens = suppress_non_speech_tokens
-    params.language = language
+    params.temperature = temperature
+    params.max_len = max_len
     params.max_tokens = max_tokens
     params.beam_search.beam_size = beam_search_beam_size
     params.greedy.best_of = greedy_best_of
-
+    params.speed_up = speed_up
+    params.entropy_thold = entropy_thold
+    params.logprob_thold = logprob_thold
+    params.no_speech_thold = no_speech_thold
+    params.length_penalty = length_penalty
+    
     result = whisper.whisper_full(ctypes.c_void_p(ctx), params, data.ctypes.data_as(ctypes.POINTER(ctypes.c_float)), len(data))
-    n_seg = whisper.whisper_full_n_segments(ctypes.c_void_p(ctx))
+    if verbose:
+        whisper.whisper_print_timings(ctypes.c_void_p(ctx))
 
+    n_seg = whisper.whisper_full_n_segments(ctypes.c_void_p(ctx))
+    
     ret = []
     for seg_i in range(n_seg):
         el = {}
@@ -93,14 +116,24 @@ def run_whisper(
     libname, 
     fname_model,
     WINDOW_SIZE = 16000 * 30 * 2,
+    verbose = False,
     language = b'en',
     n_threads = 4,
     print_realtime = False,
     print_progress = False,
+    print_timestamps = True,
+    token_timestamps = False,
     suppress_non_speech_tokens = True,
+    temperature = 0.0,
+    max_len = 0,
     max_tokens = 10,
     beam_search_beam_size = 10,
-    greedy_best_of = -1
+    greedy_best_of = -1,
+    speed_up = False,
+    length_penalty = -1.0,
+    entropy_thold = 2.4,
+    logprob_thold = -1.0,
+    no_speech_thold = 0.6
 ):
     """Run whisper and Return list of segment dict. 
 
@@ -122,14 +155,24 @@ def run_whisper(
                 data = chunk, 
                 whisper = whisper, 
                 ctx = ctx,
+                verbose = verbose,
                 language = language,
                 n_threads = n_threads,
                 print_realtime = print_realtime,
                 print_progress = print_progress,
+                print_timestamps = print_timestamps,
+                token_timestamps = token_timestamps,
                 suppress_non_speech_tokens = suppress_non_speech_tokens,
+                temperature = temperature,
+                max_len = max_len,
                 max_tokens = max_tokens,
                 beam_search_beam_size = beam_search_beam_size,
-                greedy_best_of = greedy_best_of
+                greedy_best_of = greedy_best_of,
+                speed_up = speed_up,
+                length_penalty = length_penalty,
+                entropy_thold = entropy_thold,
+                logprob_thold = logprob_thold,
+                no_speech_thold = no_speech_thold
             )
         for segment in res:
             segment['start'] += start
